@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import Lenis from 'lenis';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Loader } from './components/Loader';
 import { Navbar } from './components/Navbar';
 import { CursorGlow } from './components/CursorGlow';
 import { NoiseOverlay } from './components/NoiseOverlay';
+import { BackgroundComposition } from './components/BackgroundComposition';
 import { Hero } from './sections/Hero';
 import { About } from './sections/About';
 import { Projects } from './sections/Projects';
@@ -11,8 +15,38 @@ import { Skills } from './sections/Skills';
 import { Journey } from './sections/Journey';
 import { Contact } from './sections/Contact';
 
+gsap.registerPlugin(ScrollTrigger);
+
 export const App: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Initialize Lenis smooth scroll
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+    });
+
+    // Synchronize ScrollTrigger with Lenis scroll positions
+    lenis.on('scroll', ScrollTrigger.update);
+
+    // Coordinate GSAP raf loops with Lenis calculations
+    const rafCallback = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(rafCallback);
+
+    // Disable lag smoothing to align GSAP animation timing exactly with scrolling physics
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(rafCallback);
+    };
+  }, []);
 
   return (
     <>
@@ -24,7 +58,10 @@ export const App: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Container */}
-      <div className="relative min-h-screen bg-black overflow-hidden font-sans">
+      <div className="relative min-h-screen overflow-hidden font-sans">
+        {/* Layered cinematic fake 3D depth background (Layer 1-4) */}
+        <BackgroundComposition />
+
         {/* SVG/CSS Film Grain Noise */}
         <NoiseOverlay />
 
